@@ -1,0 +1,77 @@
+name: Release
+
+# Builds the Windows installer and attaches it to a GitHub Release.
+#
+#   git tag v0.1.0 && git push origin v0.1.0
+#
+# The installer is compiled with the C# compiler bundled in Windows itself, so
+# this needs no SDK download and produces a single self-contained .exe.
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to release (e.g. v0.1.0)'
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  installer:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build installer
+        shell: pwsh
+        run: ./tools/build-installer.ps1 -Force
+
+      # A built exe proves nothing on its own: run it headless in dry-run mode and
+      # fail the release if it cannot even report the environment it sees.
+      - name: Verify installer runs
+        shell: pwsh
+        run: |
+          $out = & .\dist\pi-vision-router-setup.exe --silent --dry-run 2>&1 | Out-String
+          Write-Host $out
+          if ($LASTEXITCODE -ne 0) { throw "dry-run exited $LASTEXITCODE" }
+          foreach ($needle in 'pi-vision-router setup', 'action: install git:github.com') {
+            if ($out -notlike "*$needle*") { throw "dry-run output missing: $needle" }
+          }
+
+      - name: Show artifact
+        shell: pwsh
+        run: |
+          $f = Get-Item .\dist\pi-vision-router-setup.exe
+          Write-Host ("{0}  {1:N0} bytes" -f $f.Name, $f.Length)
+          "{0}  {1:N0} bytes  sha256={2}" -f $f.Name, $f.Length, (Get-FileHash $f.FullName -Algorithm SHA256).Hash |
+            Out-File -FilePath .\dist\SHA256SUMS.txt -Encoding utf8
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows-installer
+          path: |
+            dist/pi-vision-router-setup.exe
+            dist/SHA256SUMS.txt
+
+      - name: Publish release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/pi-vision-router-setup.exe
+            dist/SHA256SUMS.txt
+          generate_release_notes: true
+          body: |
+            ## Install on Windows
+
+            Download **pi-vision-router-setup.exe** and run it. The wizard finds or
+            installs Pi, installs the extension, and verifies it loads.
+
+            No Node.js required? The wizard installs Pi via npm for you; if Node is
+            also missing it says so and links to nodejs.org rather than failing
+            silently.
+
+            Verify the download against `SHA256SUMS.txt`.

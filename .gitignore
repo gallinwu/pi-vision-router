@@ -1,6 +1,10 @@
 # Dependencies are restored by `pi install` (git sources) or `npm install`.
 node_modules/
 
+# Build output: the installer is compiled by tools/build-installer.ps1 and
+# attached to releases, never committed.
+dist/
+
 # Standalone-test convenience only: a junction to Pi's bundled typebox, which is
 # a host-provided peer dependency and must never be bundled.
 node_modules/typebox

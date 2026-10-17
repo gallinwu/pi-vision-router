@@ -24,6 +24,12 @@ curl -fsSL https://pi.dev/install.sh | sh           # macOS / Linux
 powershell -c "irm https://pi.dev/install.ps1 | iex"  # Windows
 ```
 
+### Windows: the .exe installer
+
+Download **[pi-vision-router-setup.exe](https://github.com/gallinwu/pi-vision-router/releases/latest)** and double-click it. A wizard shows what it found, installs the extension, and verifies it loads — no terminal, no PowerShell policy to fight.
+
+It also handles the two things a one-liner cannot: **if Pi is missing it installs Pi via npm**, and if Node itself is missing it says so up front instead of failing halfway. Verify the download against `SHA256SUMS.txt` in the same release.
+
 <details open>
 <summary><b>Windows</b> — PowerShell</summary>
 
@@ -172,6 +178,33 @@ npm test                                      # offline suites, no network, no c
 PI_VISION_LIVE=1 npm test                     # also exercise the real free chain
 node tools/make-vendor.mjs                    # regenerate extensions/vendor/ from DVR source
 ```
+
+### The Windows installer
+
+`installer/Setup.cs` is a single-file WinForms wizard compiled to
+`dist/pi-vision-router-setup.exe` with the C# compiler that ships inside Windows —
+no SDK, no NuGet, no Node needed to build it:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\tools\build-installer.ps1 -Force
+.\dist\pi-vision-router-setup.exe --silent --dry-run   # headless self-check
+.\dist\pi-vision-router-setup.exe --silent             # install, no UI
+```
+
+Pushing a `v*` tag runs `.github/workflows/release.yml`, which builds the exe, runs
+the dry-run check, and attaches both the exe and `SHA256SUMS.txt` to the release.
+
+Two behaviours worth knowing, because both were found by running the installer on a
+machine that had Pi removed:
+
+- **It installs Pi itself** when npm does not have it yet, and reports a missing Node
+  before doing anything rather than half-finishing.
+- **It repairs a duplicate registration.** Two entries pointing at the same extension
+  make Pi fail to load *both* (`Tool "vision_describe" conflicts with ...`), and
+  `pi remove` cannot clean a relative local entry — Pi resolves it to an absolute path
+  for identity matching, so the removal silently no-ops. The installer edits
+  `settings.json` directly for that case.
+
 
 `extensions/vendor/` is **generated, not hand-written**. `tools/make-vendor.mjs` slices source text verbatim out of the upstream `dsh-vision-router` clone and audits the output for DSH leftovers (`none` today), so a regeneration cannot drift. The sharp-backed helpers are re-expressed against plain sharp, dropping only DVR's resource-governor budget wrapper. The CI `vendor-drift` job re-runs the generator against the pinned upstream tag (`DVR_REF`, currently `v3.0.3`) and fails if the committed vendor tree no longer matches its output. To refresh the vendored code: run `node tools/make-vendor.mjs` against the newer clone, bump `DVR_REF` in `.github/workflows/ci.yml`, and update the header versions the generator stamps.
 
