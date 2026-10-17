@@ -15,6 +15,7 @@ using System.IO;
 using System.Text;
 using System.Threading;
 using System.Windows.Forms;
+using Microsoft.Win32;
 
 namespace PiVisionRouterSetup
 {
@@ -54,10 +55,14 @@ namespace PiVisionRouterSetup
         internal static int Run(bool dryRun, bool uninstall)
         {
             var tools = Toolchain.Discover();
+            var desktop = DesktopApp.Discover();
             Console.WriteLine("pi-vision-router setup " + Program.Version + (dryRun ? " (dry-run)" : ""));
             Console.WriteLine("node  : " + (tools.HasNode ? tools.NodePath : "NOT FOUND"));
             Console.WriteLine("npm   : " + (tools.HasNpm ? tools.NpmPath : "NOT FOUND"));
             Console.WriteLine("pi    : " + (tools.HasPi ? tools.PiDisplay : "NOT FOUND"));
+            Console.WriteLine("desktop: " + (desktop == null
+                ? "not installed"
+                : desktop.Name + " " + desktop.Version + " -> " + (desktop.ExePath ?? desktop.InstallDir)));
             Console.WriteLine("action: " + (uninstall ? "remove" : "install") + " " + Program.RepoSource);
 
             if (dryRun)
@@ -495,6 +500,88 @@ namespace PiVisionRouterSetup
         }
     }
 
+    /// <summary>Finds Pi Agent Desktop (the Tauri GUI) if it is installed.</summary>
+    internal static class DesktopApp
+    {
+        internal sealed class Info
+        {
+            internal string Name;
+            internal string Version;
+            internal string InstallDir;
+            internal string ExePath;
+        }
+
+        private const string UninstallKey =
+            @"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Pi Agent";
+
+        internal static Info Discover()
+        {
+            // Written to HKCU by the NSIS installer; HKLM covers a per-machine install.
+            foreach (var hive in new[] { RegistryHive.CurrentUser, RegistryHive.LocalMachine })
+            {
+                var info = ReadFrom(hive);
+                if (info != null) return info;
+            }
+            return null;
+        }
+
+        private static Info ReadFrom(RegistryHive hive)
+        {
+            try
+            {
+                var view = Environment.Is64BitOperatingSystem
+                    ? RegistryView.Registry64
+                    : RegistryView.Registry32;
+                using (var baseKey = RegistryKey.OpenBaseKey(hive, view))
+                using (var key = baseKey.OpenSubKey(UninstallKey))
+                {
+                    if (key == null) return null;
+
+                    var name = key.GetValue("DisplayName") as string;
+                    if (string.IsNullOrEmpty(name)) return null;
+
+                    var location = (key.GetValue("InstallLocation") as string ?? "").Trim('"', ' ');
+                    var icon = (key.GetValue("DisplayIcon") as string ?? "").Trim('"', ' ');
+                    var exe = !string.IsNullOrEmpty(icon) && File.Exists(icon)
+                        ? icon
+                        : (string.IsNullOrEmpty(location) ? null : Path.Combine(location, "pi-agent-desktop.exe"));
+
+                    return new Info
+                    {
+                        Name = name,
+                        Version = key.GetValue("DisplayVersion") as string ?? "",
+                        InstallDir = location,
+                        ExePath = exe != null && File.Exists(exe) ? exe : null,
+                    };
+                }
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Desktop reads the same settings.json the CLI does (it calls pi's
+        /// getAgentDir()/SettingsManager), so the plugin installed for one is already
+        /// visible to the other. This just opens the app so the user can confirm it in
+        /// the Plugins panel.
+        /// </summary>
+        internal static bool TryLaunch(Info info)
+        {
+            if (info == null || string.IsNullOrEmpty(info.ExePath)) return false;
+            try
+            {
+                Process.Start(info.ExePath);
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+    }
+
     internal sealed class SetupForm : Form
     {
         private readonly Label _status;
@@ -548,20 +635,24 @@ namespace PiVisionRouterSetup
             {
                 Text = "Environment",
                 Location = new Point(18, 106),
-                Size = new Size(724, 104),
+                Size = new Size(724, 128),
                 Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right,
             };
             Controls.Add(envBox);
 
+            var desktop = DesktopApp.Discover();
             var envText = new Label
             {
                 Location = new Point(12, 22),
-                Size = new Size(700, 72),
+                Size = new Size(700, 96),
                 Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right,
                 Text =
                     "Node.js : " + (string.IsNullOrEmpty(_tools.NodePath) ? "NOT FOUND" : _tools.NodePath) + "\r\n" +
                     "npm     : " + (string.IsNullOrEmpty(_tools.NpmPath) ? "NOT FOUND" : _tools.NpmPath) + "\r\n" +
-                    "Pi CLI  : " + (string.IsNullOrEmpty(_tools.PiDisplay) ? "NOT FOUND" : _tools.PiDisplay),
+                    "Pi CLI  : " + (string.IsNullOrEmpty(_tools.PiDisplay) ? "NOT FOUND" : _tools.PiDisplay) + "\r\n" +
+                    "Desktop : " + (desktop == null
+                        ? "not installed"
+                        : desktop.Name + " " + desktop.Version + "  --  shares the same plugin list"),
             };
             envText.ForeColor = _tools.HasNode && _tools.HasPi
                 ? Color.FromArgb(22, 110, 60)
@@ -572,14 +663,37 @@ namespace PiVisionRouterSetup
             {
                 Text = "Verify the extension loads after installing (recommended)",
                 Checked = true,
-                Location = new Point(20, 220),
+                Location = new Point(20, 244),
                 AutoSize = true,
             };
             Controls.Add(_verify);
 
+            if (desktop != null && desktop.ExePath != null)
+            {
+                var openDesktop = new Button
+                {
+                    Text = "Open Pi Agent Desktop",
+                    Location = new Point(400, 240),
+                    Size = new Size(180, 26),
+                    FlatStyle = FlatStyle.Flat,
+                    BackColor = Color.FromArgb(232, 234, 240),
+                    ForeColor = Color.FromArgb(40, 44, 54),
+                    Cursor = Cursors.Hand,
+                    FlatAppearance = { BorderSize = 0 },
+                };
+                openDesktop.Click += delegate
+                {
+                    if (DesktopApp.TryLaunch(desktop))
+                        Append("Opened Pi Agent Desktop -- check its Plugins panel.");
+                    else
+                        Append("Could not launch: " + desktop.ExePath);
+                };
+                Controls.Add(openDesktop);
+            }
+
             _progress = new ProgressBar
             {
-                Location = new Point(18, 246),
+                Location = new Point(18, 266),
                 Size = new Size(724, 8),
                 Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right,
                 Maximum = TotalSteps,
@@ -589,7 +703,7 @@ namespace PiVisionRouterSetup
 
             _status = new Label
             {
-                Location = new Point(18, 260),
+                Location = new Point(18, 280),
                 Size = new Size(724, 22),
                 Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right,
                 Text = "Ready.",
@@ -599,8 +713,8 @@ namespace PiVisionRouterSetup
 
             _log = new TextBox
             {
-                Location = new Point(18, 288),
-                Size = new Size(724, 196),
+                Location = new Point(18, 308),
+                Size = new Size(724, 176),
                 Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right,
                 Multiline = true,
                 ReadOnly = true,
@@ -845,6 +959,13 @@ namespace PiVisionRouterSetup
                 Append("  /vision                    status of the vision chain");
                 Append("  /see <image> <question>     ask the chain directly");
                 Append("  <drop an image into pi>     the model sees it via vision_describe");
+                var dt = DesktopApp.Discover();
+                if (dt != null)
+                {
+                    Append("");
+                    Append("Pi Agent Desktop " + dt.Version + " is installed and reads this same");
+                    Append("plugin list -- open it and check the Plugins panel to confirm.");
+                }
                 SetStatus("Finished. Restart Pi to use it.");
             }
             catch (Exception ex)
