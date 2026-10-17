@@ -6,13 +6,20 @@ on:
   pull_request:
   workflow_dispatch:
 
+env:
+  # The vendored modules were cut from this upstream tag. Re-run
+  # tools/make-vendor.mjs and bump DVR_REF together when refreshing vendor/.
+  DVR_REF: v3.0.3
+
 jobs:
   test:
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
-        node: ['20', '22']
+        # pi-coding-agent requires Node >=22.19 (its dist imports globSync);
+        # importing it in tests inherits that floor.
+        node: ['22', '24']
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
@@ -42,6 +49,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: ysr666/dsh-vision-router
+          ref: ${{ env.DVR_REF }}
           path: dsh-vision-router
 
       - uses: actions/setup-node@v4

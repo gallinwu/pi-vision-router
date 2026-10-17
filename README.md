@@ -56,8 +56,6 @@ pi install git:github.com/gallinwu/pi-vision-router
 pi --extension ./extensions/index.ts
 ```
 
-> **The install script needs the published repo.** This version of the README points at `gallinwu/pi-vision-router` (a guess from the upstream account). If you publish under a different account or name, replace `ysr666` in the badges, install snippets, `README`, `install.ps1`, `install.sh` and `package.json` before publishing: `sed -i 's/ysr666/your-account/g' install.* package.json README.md`
-
 ## Use it
 
 Restart `pi` and just ask. A text-only model gets the image via `vision_describe`:
@@ -175,7 +173,7 @@ PI_VISION_LIVE=1 npm test                     # also exercise the real free chai
 node tools/make-vendor.mjs                    # regenerate extensions/vendor/ from DVR source
 ```
 
-`extensions/vendor/` is **generated, not hand-written**. `tools/make-vendor.mjs` slices source text verbatim out of the upstream `dsh-vision-router` clone and audits the output for DSH leftovers (`none` today), so a regeneration cannot drift. The sharp-backed helpers are re-expressed against plain sharp, dropping only DVR's resource-governor budget wrapper. The CI `vendor-drift` job re-runs the generator and fails if the committed vendor tree no longer matches its output.
+`extensions/vendor/` is **generated, not hand-written**. `tools/make-vendor.mjs` slices source text verbatim out of the upstream `dsh-vision-router` clone and audits the output for DSH leftovers (`none` today), so a regeneration cannot drift. The sharp-backed helpers are re-expressed against plain sharp, dropping only DVR's resource-governor budget wrapper. The CI `vendor-drift` job re-runs the generator against the pinned upstream tag (`DVR_REF`, currently `v3.0.3`) and fails if the committed vendor tree no longer matches its output. To refresh the vendored code: run `node tools/make-vendor.mjs` against the newer clone, bump `DVR_REF` in `.github/workflows/ci.yml`, and update the header versions the generator stamps.
 
 The default `npm test` needs no network: the chain is served by `test/mock-chain.mjs`, a local OpenAI-compatible endpoint asserting that a 429 is classified `RATE_LIMIT` and tried once, a dead provider falls through to a healthy one, a blank answer counts as failure, and keyless requests send no `Authorization` header.
 
