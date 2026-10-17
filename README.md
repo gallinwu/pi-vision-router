@@ -1,9 +1,9 @@
 # pi-vision-router
 
 <p align="center">
-  <a href="https://github.com/ysr666/pi-vision-router/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/ysr666/pi-vision-router/ci.yml?branch=main&label=CI" alt="CI"></a>
+  <a href="https://github.com/gallinwu/pi-vision-router/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/gallinwu/pi-vision-router/ci.yml?branch=main&label=CI" alt="CI"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-green" alt="MIT License"></a>
-  <a href="https://github.com/ysr666/pi-vision-router/stargazers"><img src="https://img.shields.io/github/stars/ysr666/pi-vision-router?style=social" alt="Stars"></a>
+  <a href="https://github.com/gallinwu/pi-vision-router/stargazers"><img src="https://img.shields.io/github/stars/gallinwu/pi-vision-router?style=social" alt="Stars"></a>
 </p>
 
 > Your Pi model can read code but can't see your screen. **pi-vision-router gives it eyes** — vision tools over a **free, keyless** model chain, no API key, no signup, no billing.
@@ -28,7 +28,7 @@ powershell -c "irm https://pi.dev/install.ps1 | iex"  # Windows
 <summary><b>Windows</b> — PowerShell</summary>
 
 ```powershell
-powershell -ExecutionPolicy Bypass -Command "iwr https://raw.githubusercontent.com/ysr666/pi-vision-router/main/install.ps1 -UseBasicParsing | iex"
+powershell -ExecutionPolicy Bypass -Command "iwr https://raw.githubusercontent.com/gallinwu/pi-vision-router/main/install.ps1 -UseBasicParsing | iex"
 ```
 
 </details>
@@ -37,7 +37,7 @@ powershell -ExecutionPolicy Bypass -Command "iwr https://raw.githubusercontent.c
 <summary><b>macOS / Linux</b> — bash</summary>
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/ysr666/pi-vision-router/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/gallinwu/pi-vision-router/main/install.sh | bash
 ```
 
 </details>
@@ -47,7 +47,7 @@ The installer resolves `pi` (or the Node CLI entry point directly), clones the r
 ### Already have the repo? One command, no script
 
 ```powershell
-pi install git:github.com/ysr666/pi-vision-router
+pi install git:github.com/gallinwu/pi-vision-router
 ```
 
 `pi install` for a git source clones it, runs its own `npm install` for missing dependencies, and records it in your settings. From a local checkout: `pi install ./pi-vision-router`, or try it without installing at all:
@@ -56,7 +56,7 @@ pi install git:github.com/ysr666/pi-vision-router
 pi --extension ./extensions/index.ts
 ```
 
-> **The install script needs the published repo.** This version of the README points at `ysr666/pi-vision-router` (a guess from the upstream account). If you publish under a different account or name, replace `ysr666` in the badges, install snippets, `README`, `install.ps1`, `install.sh` and `package.json` before publishing: `sed -i 's/ysr666/your-account/g' install.* package.json README.md`
+> **The install script needs the published repo.** This version of the README points at `gallinwu/pi-vision-router` (a guess from the upstream account). If you publish under a different account or name, replace `ysr666` in the badges, install snippets, `README`, `install.ps1`, `install.sh` and `package.json` before publishing: `sed -i 's/ysr666/your-account/g' install.* package.json README.md`
 
 ## Use it
 

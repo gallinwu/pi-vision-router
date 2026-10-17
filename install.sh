@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 # pi-vision-router one-click installer (macOS / Linux).
 #
-#   curl -fsSL https://raw.githubusercontent.com/ysr666/pi-vision-router/main/install.sh | bash
+#   curl -fsSL https://raw.githubusercontent.com/gallinwu/pi-vision-router/main/install.sh | bash
 #
 # Or from a clone:  ./install.sh .     (installs this checkout)
 set -euo pipefail
 
-SOURCE="${1:-git:github.com/ysr666/pi-vision-router}"
+SOURCE="${1:-git:github.com/gallinwu/pi-vision-router}"
 
 step() { printf '\033[36m==> %s\033[0m\n' "$1"; }
 ok()   { printf '\033[32m  ok  %s\033[0m\n' "$1"; }

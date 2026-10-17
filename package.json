@@ -6,11 +6,11 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/ysr666/pi-vision-router.git"
+    "url": "git+https://github.com/gallinwu/pi-vision-router.git"
   },
-  "homepage": "https://github.com/ysr666/pi-vision-router#readme",
+  "homepage": "https://github.com/gallinwu/pi-vision-router#readme",
   "bugs": {
-    "url": "https://github.com/ysr666/pi-vision-router/issues"
+    "url": "https://github.com/gallinwu/pi-vision-router/issues"
   },
   "keywords": [
     "pi",

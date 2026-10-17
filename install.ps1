@@ -9,7 +9,7 @@
 #>
 [CmdletBinding()]
 param(
-  [string] $Source = 'git:github.com/ysr666/pi-vision-router',
+  [string] $Source = 'git:github.com/gallinwu/pi-vision-router',
   [switch] $SkipVerify
 )
 
