@@ -1,0 +1,22 @@
+pi-vision-router
+Copyright (c) 2026 pi-vision-router port contributors
+
+This product is a port of dsh-vision-router to the Pi extension runtime.
+
+  dsh-vision-router v3.0.3
+  https://github.com/ysr666/dsh-vision-router
+  Copyright (c) 2026 dsh-vision-router contributors
+  Licensed under the MIT License.
+
+Files under extensions/vendor/ are generated from dsh-vision-router source text by
+tools/make-vendor.mjs. The prompt, pixel and OCR helpers there are copied
+verbatim from src/lib/core-primitives.js; the sharp-backed helpers are
+re-expressed against plain sharp because the Pi runtime has no DSH resource
+governor, so only the budget wrapper is dropped. windows-desktop-capture.js is
+copied verbatim. Every generated file carries the upstream copyright notice in
+its header.
+
+The port itself -- the Pi extension surface in extensions/index.ts,
+extensions/engine.js and extensions/tools.js, the vendor generator, and the
+tests -- was written for Pi and is distributed under the same MIT License.
+No warranty is provided by either copyright holder; see LICENSE.

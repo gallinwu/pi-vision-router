@@ -1,0 +1,7 @@
+# Keep line endings deterministic across platforms.
+# install.sh with CRLF fails under bash; vendored JS must match generator
+# output byte-for-byte or the CI vendor-drift check misfires.
+* text=auto eol=lf
+
+*.png binary
+*.ico binary

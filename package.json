@@ -1,0 +1,62 @@
+{
+  "name": "pi-vision-router",
+  "version": "0.1.0",
+  "description": "Give a text-only Pi model eyes: vision tools over a free, keyless OpenAI-compatible chain. Port of dsh-vision-router to the Pi extension runtime.",
+  "type": "module",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ysr666/pi-vision-router.git"
+  },
+  "homepage": "https://github.com/ysr666/pi-vision-router#readme",
+  "bugs": {
+    "url": "https://github.com/ysr666/pi-vision-router/issues"
+  },
+  "keywords": [
+    "pi",
+    "pi-coding-agent",
+    "pi-extension",
+    "vision",
+    "ocr",
+    "screenshot",
+    "multimodal",
+    "free-api"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "files": [
+    "extensions",
+    "tools",
+    "test",
+    "test-fixtures",
+    "install.ps1",
+    "install.sh",
+    "LICENSE",
+    "NOTICE",
+    "README.md"
+  ],
+  "scripts": {
+    "test": "node test/run-all.mjs",
+    "test:live": "node -e \"process.env.PI_VISION_LIVE='1';const cp=require('child_process');const r=cp.spawnSync(process.execPath,['test/run-all.mjs'],{stdio:'inherit'});process.exitCode=r.status??1\"",
+    "vendor": "node tools/make-vendor.mjs"
+  },
+  "pi": {
+    "extensions": [
+      "./extensions/index.ts"
+    ]
+  },
+  "peerDependencies": {
+    "@earendil-works/pi-ai": "*",
+    "@earendil-works/pi-coding-agent": "*",
+    "typebox": "*"
+  },
+  "devDependencies": {
+    "@earendil-works/pi-coding-agent": "^1.3.0",
+    "typebox": "^1.4.0"
+  },
+  "dependencies": {
+    "potrace": "^2.1.8",
+    "sharp": "^0.35.5"
+  }
+}
