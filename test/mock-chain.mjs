@@ -10,7 +10,7 @@ export const MOCK_ANSWER = 'MOCK VISION ANSWER'
  * Returns { url, baseURL, close, hits } -- point a provider's baseURL at
  * `${url}/v1`.
  */
-export async function startMockChain({ reply = MOCK_ANSWER, status = 200, delayMs = 0, contentType } = {}) {
+export async function startMockChain({ reply = MOCK_ANSWER, status = 200, delayMs = 0, contentType, rejectAuth = false } = {}) {
   const hits = []
 
   const server = createServer((req, res) => {
@@ -24,6 +24,13 @@ export async function startMockChain({ reply = MOCK_ANSWER, status = 200, delayM
         parsed = { raw: body }
       }
       hits.push({ url: req.url, headers: req.headers, body: parsed })
+
+      // Mirror the OVH anonymous tier: any Authorization header is a hard 403.
+      if (rejectAuth && req.headers.authorization !== undefined) {
+        res.writeHead(403, { 'content-type': 'application/json' })
+        res.end(JSON.stringify({ error: { message: 'Forbidden: authentication failed.' } }))
+        return
+      }
 
       if (delayMs > 0) await new Promise((resolve) => setTimeout(resolve, delayMs))
 

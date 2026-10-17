@@ -23,7 +23,13 @@ const DEFAULTS = {
   progressiveTools: true,
   autoActivateOnImage: true,
   routing: false,
-  exposeChainProvider: true,
+  // OFF by default: registering the keyless chain as a selectable provider makes
+  // Pi willing to pick it as the SESSION model, and then every ordinary chat turn
+  // goes through the anonymous tier -- which 403s on any Authorization header and
+  // is far too small to drive an agent. The vision tools do not need this at all;
+  // the chain is reached through the engine. Opt in with
+  // /vision set exposeChainProvider=true when you want those models by name.
+  exposeChainProvider: false,
   desktopScreenshot: false,
   ocrEngine: 'auto',
   model: '',
@@ -38,6 +44,10 @@ const DEFAULTS = {
 }
 
 const CHAIN_PROVIDER = 'vision-chain'
+// Placeholder that satisfies Pi's "provider must have a key" check; the
+// before_provider_headers hook deletes the resulting Authorization header so the
+// anonymous endpoint never sees it.
+const KEYLESS_SENTINEL = 'pi-vision-router-keyless'
 
 function readSettings() {
   try {
@@ -175,9 +185,13 @@ export default function visionRouter(pi) {
     pi.registerProvider(CHAIN_PROVIDER, {
       name: 'Vision Chain (dsh-vision-router port)',
       baseUrl: providers[0]?.baseURL,
-      // Keyless anonymous tier: a placeholder literal keeps the registry happy;
-      // the OpenAI request only sends Authorization when apiKeyEnv is declared.
-      apiKey: 'anonymous',
+      // Pi refuses to send a request whose provider has no key at all
+      // (assertRequestAuth), but the anonymous OVH tier rejects ANY
+      // Authorization header with "403 authentication failed". So the registry
+      // gets a sentinel to satisfy the check, and the before_provider_headers
+      // hook below strips the header off the wire. Verified against the live
+      // endpoint: same request 200 without the header, 403 with it.
+      apiKey: KEYLESS_SENTINEL,
       api: 'openai-completions',
       models: providers.map((provider) => ({
         id: provider.model,
@@ -191,6 +205,20 @@ export default function visionRouter(pi) {
     })
   }
   syncChainProvider()
+
+  // Keep the keyless chain actually keyless: delete the Authorization header the
+  // sentinel above makes Pi assemble. The event carries no provider field, so the
+  // match is on the sentinel value itself -- a real provider's own credential is
+  // never touched.
+  pi.on('before_provider_headers', (event) => {
+    if (settings.exposeChainProvider === false) return
+    const headers = event.headers as Record<string, unknown> | undefined
+    if (!headers) return
+    for (const name of Object.keys(headers)) {
+      if (name.toLowerCase() !== 'authorization') continue
+      if (String(headers[name] ?? '').includes(KEYLESS_SENTINEL)) headers[name] = null
+    }
+  })
 
   // ── Image-turn bridge: text-only session models get eyes via the tools ──
   pi.on('before_agent_start', async (event, runCtx) => {

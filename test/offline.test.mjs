@@ -128,4 +128,58 @@ const textOf = (r) => (r?.content ?? []).filter((c) => c.type === 'text').map((c
   }
 }
 
+// --- 6. A keyless provider must send NO Authorization header ---
+// The OVH anonymous tier returns 403 for any Authorization header, so a
+// placeholder apiKey silently breaks every call. This asserts the real contract.
+{
+  const mock = await startMockChain({ rejectAuth: true })
+  try {
+    const settings = mockSettings(mock)
+    const { engine } = harness(settings)
+    const result = await engine.ask([{ bytes: probe, mediaType: 'image/png' }], 'x', { scope: 'offline:auth' })
+    assert.equal(result.ok, true, `keyless call must not be rejected: ${JSON.stringify(result)}`)
+    assert.equal(mock.hits[0].headers.authorization, undefined, 'Authorization header was sent')
+    console.log('ok  keyless request sends no Authorization header')
+  } finally {
+    await mock.close()
+  }
+}
+
+// --- 7. A provider that requires a key must actually send one ---
+{
+  // rejectAuth is NOT used here: that switch mirrors a provider rejecting every
+  // Authorization header, which is the keyless case above. Here the assertion is
+  // simply that a declared apiKeyEnv puts a Bearer token on the wire.
+  const mock = await startMockChain()
+  try {
+    process.env.PVR_TEST_KEY = 'secret-token'
+    const settings = mockSettings(mock)
+    settings.httpProviders[0].apiKeyEnv = 'PVR_TEST_KEY'
+    const { engine } = harness(settings)
+    const result = await engine.ask([{ bytes: probe, mediaType: 'image/png' }], 'x', { scope: 'offline:keyed' })
+    assert.equal(result.ok, true, `keyed call should succeed: ${JSON.stringify(result)}`)
+    assert.equal(mock.hits[0].headers.authorization, 'Bearer secret-token')
+    console.log('ok  apiKeyEnv resolves to a Bearer token')
+  } finally {
+    delete process.env.PVR_TEST_KEY
+    await mock.close()
+  }
+}
+
+// --- 8. Empty content is a failure, even with a 200 and a stop finish ---
+// Qwen3.5-397B on the anonymous tier returns 200 with empty content when it
+// spends its budget on reasoning. That must never look like a real answer.
+{
+  const mock = await startMockChain({ reply: '' })
+  try {
+    const settings = mockSettings(mock)
+    const { engine } = harness(settings)
+    const result = await engine.ask([{ bytes: probe, mediaType: 'image/png' }], 'x', { scope: 'offline:blank' })
+    assert.equal(result.ok, false, 'empty content must not be reported as success')
+    console.log('ok  empty 200 content treated as failure')
+  } finally {
+    await mock.close()
+  }
+}
+
 console.log('OFFLINE SUITE OK')
