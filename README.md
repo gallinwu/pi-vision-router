@@ -30,6 +30,12 @@ Download **[pi-vision-router-setup.exe](https://github.com/gallinwu/pi-vision-ro
 
 It also handles the two things a one-liner cannot: **if Pi is missing it installs Pi via npm**, and if Node itself is missing it says so up front instead of failing halfway. Verify the download against `SHA256SUMS.txt` in the same release.
 
+### Pi Agent Desktop (the GUI app)
+
+Works as-is. [Pi Agent Desktop](https://github.com/abcwyc/pi-agent-desktop) resolves plugins through Pi's own `getAgentDir()`/`SettingsManager`, so it reads **the same `~/.pi/agent/settings.json`** the CLI does — install once with any of the methods above and the extension shows up in its Plugins panel. The installer detects an existing Desktop install and offers to open it.
+
+Verified against both bundled versions: v0.6.4 ships pi 1.1.0 and v0.7.2 ships pi 1.3.0, and every extension API used here exists in both.
+
 <details open>
 <summary><b>Windows</b> — PowerShell</summary>
 
