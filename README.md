@@ -68,6 +68,24 @@ pi install git:github.com/gallinwu/pi-vision-router
 pi --extension ./extensions/index.ts
 ```
 
+### From the Pi Agent Desktop GUI
+
+**Settings → Plugins → Add plugin**, set the source field to:
+
+```
+git:github.com/gallinwu/pi-vision-router
+```
+
+then press install. The Desktop app reads the same `~/.pi/agent` the CLI does, so an extension installed either way shows up in both — no second install, no separate plugin store.
+
+### Verifying the install
+
+```powershell
+pi list          # should list git:github.com/gallinwu/pi-vision-router
+```
+
+Then start Pi and run `/vision` — the status line should read `providers=5`. If it says `NOT FOUND` or the extension failed to load, check for a duplicate registration (two entries pointing at the same extension make **both** fail with `Tool "vision_describe" conflicts with ...`); remove the stale one with `pi remove <source>`.
+
 ## Use it
 
 Restart `pi` and just ask. A text-only model gets the image via `vision_describe`:
